@@ -10,18 +10,6 @@ import (
 	"strings"
 )
 
-func printGameLine(gL models.GameLine) {
-	fmt.Printf("GameLine number %d | ", gL.GameNumber)
-	fmt.Printf("GameLine line: %s\n", gL.Line)
-	fmt.Println("\tGameLine Sets:")
-	for i := range gL.Subsets {
-		fmt.Printf("\t\tSet %d:\n", i)
-		for j := range gL.Subsets[i].Colours {
-			fmt.Printf("\t\t\t%d %s\n", gL.Subsets[i].Colours[j].Count, gL.Subsets[i].Colours[j].Colour)
-		}
-	}
-}
-
 func removeSpacesFromArray(arr []string) []string {
 	for i := range arr {
 		arr[i] = strings.TrimSpace(arr[i])
@@ -36,7 +24,7 @@ func setGameNumber(gL *models.GameLine) {
 	gL.GameNumber = res
 }
 
-func getColour(set string) models.Colour {
+func getColour(set string) *models.Colour {
 	split_vals := removeSpacesFromArray(strings.Split(set, " "))
 
 	count, err := strconv.Atoi(split_vals[0])
@@ -58,30 +46,24 @@ func setSubsets(gL *models.GameLine) {
 
 		// Declare and initialise a 'Set'
 		new_set := models.Set{}
+		ptr_set := &new_set
 
 		// For each pair in each set
 		for _, split_set := range split_sets {
 			// Add the `Colour` to the new set's Colours array
-			new_set.Colours = append(new_set.Colours, getColour(split_set))
+			ptr_set.Colours = append(ptr_set.Colours, getColour(split_set))
 		}
 
 		// Append the new set to the GameLine Set array
-		gL.Subsets = append(gL.Subsets, new_set)
+		gL.Subsets = append(gL.Subsets, ptr_set)
 	}
 }
 
-func check_colour(given string, expected string) {
-	if given != expected {
-		panic(fmt.Sprintf("Expected colour was %s, actual was %s", expected, given))
-	}
-	fmt.Printf("Given colour of %s matches expected colour of %s\n", given, expected)
-}
+func parseGameLine(gL *models.GameLine, colour_limits [3]int) bool {
+	setGameNumber(gL)
+	setSubsets(gL)
 
-func parseGameLine(gL models.GameLine, colour_limits [3]int) bool {
-	setGameNumber(&gL)
-	setSubsets(&gL)
-
-	setMaximums(&gL)
+	setMaximums(gL)
 
 	for i := range gL.Maximums {
 		if gL.Maximums[i] > colour_limits[i] {
@@ -95,6 +77,7 @@ func parseGameLine(gL models.GameLine, colour_limits [3]int) bool {
 func setMaximums(gL *models.GameLine) {
 	for i := range gL.Subsets {
 		for j := range gL.Subsets[i].Colours {
+			fmt.Printf("%d %s\n", gL.Subsets[i].Colours[j].Count, gL.Subsets[i].Colours[j].Colour)
 			switch colour := gL.Subsets[i].Colours[j].Colour; colour {
 			case "red":
 				if gL.Subsets[i].Colours[j].Count > gL.Maximums[0] {
@@ -105,12 +88,10 @@ func setMaximums(gL *models.GameLine) {
 				if gL.Subsets[i].Colours[j].Count > gL.Maximums[1] {
 					gL.Maximums[1] = gL.Subsets[i].Colours[j].Count
 				}
-
 			case "blue":
 				if gL.Subsets[i].Colours[j].Count > gL.Maximums[2] {
 					gL.Maximums[2] = gL.Subsets[i].Colours[j].Count
 				}
-
 			}
 		}
 	}
@@ -118,24 +99,20 @@ func setMaximums(gL *models.GameLine) {
 
 func main() {
 	var data []models.GameLine
-	data, err := utils.GetLines("data.txt")
+	data, err := utils.GetGameLines("data.txt")
 	utils.Check(err)
 
 	colour_limits := []int{12, 13, 14}
 
 	results := []bool{}
 	for i := range data {
-		results = append(results, parseGameLine(data[i], [3]int(colour_limits)))
+		results = append(results, parseGameLine(&data[i], [3]int(colour_limits)))
 	}
 
-	fmt.Printf("The following lines are possible:")
-	total := 0
-	for i := range results {
-		if results[i] {
-			fmt.Printf(" %d", i+1)
-			total += (i + 1)
-		}
+	power_of_mins := 0
+	for i := range data {
+		power_of_mins += (data[i].Maximums[0] * data[i].Maximums[1] * data[i].Maximums[2])
 	}
-	fmt.Printf("\nTotal is %d\n", total)
 
+	fmt.Println(power_of_mins)
 }

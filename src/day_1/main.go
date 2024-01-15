@@ -41,7 +41,7 @@ func part_one(data []models.GameLine) (int, error) {
 
 func main() {
 	var data []models.GameLine
-	data, err := utils.GetLines("data.txt")
+	data, err := utils.GetGameLines("data.txt")
 	utils.Check(err)
 
 	for _, gL := range data {
